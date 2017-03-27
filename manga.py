@@ -271,6 +271,7 @@ def add_to_calibre(f_name, info):
   os.remove(pid_file)
 
 def save(links, dirName, img_type, image_links=False):
+  print("hello")
   for i in range(len(links)):
     img_name = '{}{:03}.{}'.format(dirName, i+1, img_type)
     if not os.path.exists(img_name.replace('.jpg', '.png')) and not os.path.exists(img_name.replace('.png', '.jpg')):
@@ -316,7 +317,6 @@ def function_name(chapters, series, tags, author, status):
   global url
 
   l = 0
-
   tmpdir = tempfile.mkdtemp()+'/'
 
   for i in re.findall('(&#(\\d*?);)', str(series)):
@@ -325,7 +325,8 @@ def function_name(chapters, series, tags, author, status):
   for chapter in chapters:
     for i in re.findall('(&#(\\d*?);)', str(chapter['name'])):
       chapter['name'] = chapter['name'].replace(i[0], chr(int(i[1])))
-
+    
+    print(chapter['backup_links'][0])
     print('  Downloading chapter - {}'.format(chapter['name']))
     f_name  = '{}{}.cbz'.format(tmpdir, re.sub('[$&\\*<>:;/]', '_', chapter['name']))
     chapdir = tempfile.mkdtemp(dir=tmpdir)+'/'
@@ -433,6 +434,66 @@ def mangareader(url, download_chapters):
   if chapters:
     function_name(chapters, series, tags, author, status)
 
+def japscan(url, download_chapters):
+ 
+  html  = get_html(url)
+  global last
+  series    = title(re.search('(<h1 class="bg-header">).*>(.*)</a>(</h1>)', html.replace('\n', '')).group(2))
+
+#FIND ALL
+  info_gen = re.findall('(<div class="cell">\\s*(.*?)\\s*</div>)', html.replace('\n', '')) ## ['alice@google.com', 'bob@abc.com']
+
+  status=info_gen[7][1]
+  author=info_gen[5][1]
+  tags=info_gen[7][1]
+  
+
+  for j in range(len(tags)):
+    for k in tag_dict:
+       print("")
+       #tags[j] = re.sub(k, tag_dict[k], tags[j])
+  chapters  = []
+
+  # catch chapters list
+  chapitres=re.search('(<div id="liste_chapitres">(.*)</div><div class="col-1-3")', html.replace('\n',''))
+    
+  # print(chapitres.group(1))
+  for j in re.findall('<li>(.*?)</li>', chapitres.group(1), re.DOTALL|re.MULTILINE)[::-1]:
+    print(j)
+    match = re.search('<a.*[-/]([0-9]+).*',j,re.DOTALL|re.MULTILINE)
+# re.search('<a.*?>(.*?)([\\d,.]+)\\s*</a>', j, re.DOTALL|re.MULTILINE)
+    print(match.group(1))
+    #name  = match.group(2)
+    num   = float(match.group(1))
+    link  = "http://"+re.search('href=\".*(www.*?)\"', j).group(1)
+    name = ""+match.group(1)
+    date = "01/01/2000"
+    #if name:
+    #  name = '{} - {} : {}'.format(series, '{:3.1f}'.format(num).zfill(5), name)
+    #else:
+    #  name = '{} - {}'.format(series, '{:3.1f}'.format(num).zfill(5))
+
+    if (download_chapters and num in download_chapters) or (not download_chapters and num > last):
+      if args.debug or args.verbose:
+        print('  Gathering info: \"{}\"'.format(series))
+      chap_html = get_html(link)
+      links=['']
+      #HACK : HAVE TO PARSE EACH PAGE TO RETRIEVE IMAGE
+      for content in re.findall('<option .* value=\"(.*?)\".*?>.*</option>', chap_html)[::-1]:
+        content_html=get_html("http://www.japscan.com"+content)
+        search='<div itemscope itemtype="http://schema.org/Article">.*src="(.*[.][a-z]{0,4})"/>' 
+        link_page=re.search(search,content_html.replace('\n',''),re.MULTILINE)
+        print(link_page.group(1))
+        links.append(link_page.group(1))      
+
+      links.remove('')
+#     links     = ['http://www.japscan.com' + i for i in re.findall('<option .* value=\"(.*?)\".*?>.*</option>', chap_html)]
+      chapters.append({'name':name, 'links':links, 'backup_links':links, 'date':date, 'pages':len(links), 'num':num})
+      
+  if chapters:
+    function_name(chapters, series, tags, author, status)
+
+
 def mangahere(url, download_chapters):
   html  = get_html(url)
   global last
@@ -507,12 +568,9 @@ def batoto(url, download_chapters):
     if j[0]  == batoto_lang:
       match  = re.search('<a href=\"([^\"]*?)\".*?>\\s*<img.*?>\\s*([^\"<>]*)(\\s*:\\s*)?(.*?)\\s*</a>', j[1], re.DOTALL|re.MULTILINE)
       name   = match.group(4)
-      m2     = re.search('[Cc]h(ap)?(ter)?\\.?\\s*([Ee]xtras?:?)?\\s*[\\.:-]?\\s*([\\d\\.,]+)?\\s*(-\\s*[\\d\\.]+)?', match.group(2))
+      m2     = re.search('[Cc]h(ap)?(ter)?\\.?\\s*([Ee]xtra:?)?\\s*([\\d\\.]+)\\s*(-\\s*[\\d\\.]+)?', match.group(2))
       try:
-        if m2.group(3):
-          num = 0
-        else:
-          num = float(m2.group(4).replace(',', '.'))
+        num    = float(m2.group(4))
       except:
         if args.debug:
           print(j[1])
@@ -700,7 +758,7 @@ def main():
   global dest
   global url
   global session
-
+  
   if not args.url:
     with open(args.list, 'r') as f:
       xml_list  = f.read()
@@ -714,7 +772,7 @@ def main():
         for j in range(int(float(re.split('\\s*-\\s*', i, maxsplit=1)[0])*10), int(float(re.split('\\s*-\\s*', i, maxsplit=1)[1])*10)+1):
           download_chapters.append(j/10.0)
     download_chapters = sorted(list(set([float(j) for j in download_chapters])))
-
+  print ('heel')
   if not args.url:
     for item in re.findall('(\n?<entry>\\s*(.*?)\\s*</entry>)', xml_list, re.DOTALL|re.MULTILINE):
       session = Session()
@@ -748,7 +806,8 @@ def main():
         mangapanda(url, download_chapters)
       elif 'goodmanga.net' in url:
         goodmanga(url, download_chapters)
-
+      elif 'japscan.com' in url:
+        japscan(url,download_chapters)
       with open(args.list, 'w') as f:
         f.write(xml_list)
   else:
@@ -771,6 +830,8 @@ def main():
       mangapanda(url, download_chapters)
     elif 'goodmanga.net' in url:
       goodmanga(url, download_chapters)
+    elif 'japscan.com' in url:
+        japscan(url,download_chapters)
 
 
 if __name__ == "__main__":
