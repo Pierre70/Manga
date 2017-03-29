@@ -248,3 +248,33 @@ def function_name(chapters, series, tags, author, status,args):
     with open(args.list, 'w') as f:
       f.write(xml_list)
 
+
+
+
+#My own version of title case
+#It's like regular title case but some
+#  words such as "the" will not be capitalized
+#  (unless they are at the beggining)
+def title(string):
+  return string.title().replace \
+    (' The ' , ' the ' ).replace \
+    (' Of '  , ' of '  ).replace \
+    (' Is '  , ' is '  ).replace \
+    (' In '  , ' in '  ).replace \
+    (' For'  , ' for'  ).replace \
+    (' On '  , ' on '  ).replace \
+    (' If '  , ' if '  ).replace \
+    (' Than ', ' than ').replace \
+    (' No '  , ' no '  ).replace \
+    (' Na '  , ' na '  ).replace \
+    (' A '   , ' a '   ).replace \
+    (' Nomi ', ' nomi ').replace \
+    (' Zo '  , ' zo '  ).replace \
+    (' To '  , ' to '  ).replace \
+    (' Ga '  , ' ga '  ).replace \
+    (' Ni '  , ' ni '  ).replace \
+    (' Dxd'  , ' DxD'  ).replace \
+    (' Xx'   ,  ' xx'  ).replace \
+    (' Xxx'  ,  ' xxx' ).replace \
+    ('/'     , '-'     ).strip()
+
