@@ -29,6 +29,8 @@ def japscan(url, download_chapters,args):
 
   html  = get_html(url)
   global last
+  if hasattr(args, 'last'):
+    last=args.last
   series    = title(re.search('(<h1 class="bg-header">).*>(.*)</a>(</h1>)', html.replace('\n', '')).group(2))
 
 #FIND ALL
@@ -50,10 +52,8 @@ def japscan(url, download_chapters,args):
 
   # print(chapitres.group(1))
   for j in re.findall('<li>(.*?)</li>', chapitres.group(1), re.DOTALL|re.MULTILINE)[::-1]:
-    print(j)
     match = re.search('<a.*[-/]([0-9]+).*',j,re.DOTALL|re.MULTILINE)
 # re.search('<a.*?>(.*?)([\\d,.]+)\\s*</a>', j, re.DOTALL|re.MULTILINE)
-    print(match.group(1))
     #name  = match.group(2)
     num   = float(match.group(1))
     link  = "http://"+re.search('href=\".*(www.*?)\"', j).group(1)
@@ -76,12 +76,11 @@ def japscan(url, download_chapters,args):
         link_page=re.search(search,content_html.replace('\n',''),re.MULTILINE)
 
         link_page=re.search(search,content_html.replace('\n',''),re.MULTILINE)
-        print(link_page.group(1))
         links.append(link_page.group(1))
 
       links.remove('')
       chapters.append({'name':name, 'links':links, 'backup_links':links, 'date':date, 'pages':len(links), 'num':num})
-
+      args.url=url
   if chapters:
     function_name(chapters, series, tags, author, status,args)
 

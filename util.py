@@ -165,7 +165,11 @@ def function_name(chapters, series, tags, author, status,args):
   global last
   global dest
   global url
-
+  
+  try:
+    last=args.last
+  except:
+    last=-1
   l = 0
   tmpdir = tempfile.mkdtemp()+'/'
 
@@ -192,7 +196,8 @@ def function_name(chapters, series, tags, author, status,args):
         raise NameError('Not_Valid_Site_for_Quick_links')
 
       save(chapter['links'], chapdir, chapter['links'][0].rpartition('.')[2][:3], True)
-    except:
+    except Exception as e:
+      print (str(e))
       try:
         print('\r  Slight problem - will use backup solution(may be a bit slower)')
         save(chapter['backup_links'], chapdir, re.search('<a.*?>\\s*<img[^<]*?src=\"(.*?)\".*?>\\s*</a>', get_html(chapter['backup_links'][0]), re.DOTALL|re.MULTILINE).group(1).rpartition('.')[2][:3])
@@ -204,26 +209,31 @@ def function_name(chapters, series, tags, author, status,args):
         raise
         return
 
-
-    zipper(chapdir, f_name)
+    try:
+      zipper(chapdir, f_name)
+    except:
+      print()
 
     if args.add_to_calibre:
       add_to_calibre(f_name, [chapter['name'], series, tags, chapter['pages'], chapter['date'], author])
     dest=args.dest
+    print ("ma dest : "+dest)
     if dest:
       while dest.endswith('/'):
         dest = dest[:-1]
       dirName = '{}/{}/'.format(dest, re.sub('[$&\\*<>:;/]', '_', series))
       if not os.path.isdir(dirName):
         os.makedirs(dirName)
-      shutil.move(f_name, dirName)
+      try: 
+        shutil.move(f_name, dirName)
+      except:
+        print()
 
     l=chapter['num']
 
     if not args.debug:
       shutil.rmtree(chapdir)
-    print()
-    if not args.url:
+    if not args.url and not args.update:
       xml_list = xml_list.replace(entry, '<url>{url}</url>\n\t<last>{last}</last>'.format(url=url, last=l))
       entry    = '<url>{url}</url>\n\t<last>{last}</last>'.format(url=url, last=l)
 
@@ -234,7 +244,7 @@ def function_name(chapters, series, tags, author, status,args):
       print()
       shutil.rmtree(tmpdir)
 
-  if not args.url:
+  if not args.url and not args.update:
     if status != 'Completed':
       if l > last:
         last = l
@@ -244,11 +254,33 @@ def function_name(chapters, series, tags, author, status,args):
     else:
       xml_list = xml_list.replace(item[0], '')
 
-  if not args.url:
+  if not args.url and not args.update:
     with open(args.list, 'w') as f:
       f.write(xml_list)
+  #Writting last chapter downloaded and url from file
+  if not  hasattr(args, 'url') or args.url is None :
+    print("re read url")
+    # no url : read it from chapters
+    with open(dirName+"/chapters.txt", 'r') as filo:
+      url = filo.readline().replace("\n","")
+  else:
+    print("url from args")
+    url=args.url
+  
 
+  lastTxt(dirName+"/chapters.txt",l,last,url)  
 
+def lastTxt(file,l,last,url):
+  print (url)
+  try:
+    if l > last:
+      status=open(file,"w")
+      status.write(url+"\n")
+      status.write(str(l))
+  except NameError:
+    status=open(file,"w")
+    status.write(url+"\n")
+    status.write(str(l))
 
 
 #My own version of title case

@@ -29,6 +29,8 @@ tag_dict= {
 def mangareader(url, download_chapters,args):
   html  = get_html(url)
   global last
+  if hasattr(args, 'last'):
+    last=args.last
 
   series    = title(re.search('<td.*?>\\s*Name:.*?<h2.*?>\\s*(.*?)\\s*</h2>\\s*</td>', html.replace('\n', '')).group(1))
   status    = re.search('<td.*?>\\s*Status:.*?<td>\\s*(.*?)\\s*</td>', html.replace('\n', '')).group(1)

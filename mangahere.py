@@ -28,6 +28,8 @@ tag_dict= {
 def mangahere(url, download_chapters,args):
   html  = get_html(url)
   global last
+  if hasattr(args, 'last'):
+    last=args.last
 
   series    = title(re.search('<h1 class="title"><span class="title_icon"></span>(.*?)</h1>', html.replace('\n', '')).group(1))
   status    = re.search('<li><label>Status:</label>(.*?)<', html.replace('\n', '')).group(1)

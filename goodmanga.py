@@ -28,7 +28,9 @@ tag_dict= {
 def goodmanga(url, download_chapters,args):
   html  = get_html(url)
   global last
-
+  if hasattr(args, 'last'):
+    last=args.last
+ 
   series    = title(re.search('<h1>([^<>]*?)</h1>', html.replace('\n', '')).group(1))
   status    = re.search('<span>Status:</span>\\s*(.*?)\\s*</div>', html.replace('\n', '')).group(1)
   author    = re.search('<span>Authors?:</span>\\s*(.*?)\\s*</div>', html.replace('\n', '')).group(1)

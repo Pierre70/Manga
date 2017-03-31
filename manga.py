@@ -15,6 +15,8 @@ import sys
 import os
 import re
 from util import request,get_html,zipper,check_pid,wait,save,function_name,title
+import glob
+
 
 #Import lib for each scan site supported
 from japscan import japscan 
@@ -41,6 +43,8 @@ parser . add_argument('-u', '--username',       default = '',           type=str
 parser . add_argument('-p', '--password',       default = '',           type=str, help='Batoto password')
 parser . add_argument('url',  nargs='?',                                type=str, help='Url of page to download - do not combine with -x/--list')
 parser . add_argument('chap', nargs='?',                                type=str, help='Chaptes to download - Only works if url is also specified')
+parser . add_argument('-k', '--update', 	action = 'store_true'		, help='Make auto update of all folder')
+
 args   = parser.parse_args()
 
 #TODO
@@ -138,59 +142,10 @@ def main():
   global dest
   global url
   global session
-  
-  if not args.url:
-    with open(args.list, 'r') as f:
-      xml_list  = f.read()
-
-  download_chapters = []
-  if args.chap:
-    download_chapters = re.split('\\s*,\\s*', args.chap)
-    for i in download_chapters:
-      if type(i) == str and '-' in i:
-        download_chapters.remove(i)
-        for j in range(int(float(re.split('\\s*-\\s*', i, maxsplit=1)[0])*10), int(float(re.split('\\s*-\\s*', i, maxsplit=1)[1])*10)+1):
-          download_chapters.append(j/10.0)
-    download_chapters = sorted(list(set([float(j) for j in download_chapters])))
-  print ('heel')
-  if not args.url:
-    for item in re.findall('(\n?<entry>\\s*(.*?)\\s*</entry>)', xml_list, re.DOTALL|re.MULTILINE):
-      session = Session()
-      session.headers.update({'User-agent': 'Mozilla/5.0'})
-      entry = item[1]
-      try:
-        url       = re.search('<url>(.*?)</url>',                  entry, re.DOTALL|re.MULTILINE).group(1).strip()
-        try:
-          last    = float(re.search('<last>\\s*([\\d.,-]+)\\s*</last>',  entry, re.DOTALL|re.MULTILINE).group(1))
-        except:
-          last    = -1
-        try:
-          dest    = re.search('<destination>(.*?)</destination>',  entry, re.DOTALL|re.MULTILINE).group(1)
-        except:
-          if not args.add_to_calibre:
-            dest  = './'
-          else:
-            dest  = ''
-      except:
-        print('ERROR - line 681\n\n\"{}\"'.format(item[0].replace('\n', '\\n').replace('\t', '\\t')))
-        sys.exit(-1)
-      print('URL - {}'.format(url))
-
-      if 'mangareader.net' in url:
-        mangareader(url, download_chapters,args)
-      elif 'mangahere.co' in url:
-        mangahere(url, download_chapters),args
-      elif 'bato.to' in url:
-        batoto(url+'/', download_chapters,args)
-      elif 'mangapanda.com' in url:
-        mangapanda(url, download_chapters,args)
-      elif 'goodmanga.net' in url:
-        goodmanga(url, download_chapters,args)
-      elif 'japscan.com' in url:
-        japscan(url,download_chapters,args)
-      with open(args.list, 'w') as f:
-        f.write(xml_list)
-  else:
+ 
+### make auto update
+  if args.update:
+    download_chapters = []
     if args.dest:
       dest = args.dest
     elif not args.add_to_calibre:
@@ -198,20 +153,107 @@ def main():
     else:
       dest = ''
     args.dest=dest
-    url = args.url
-    if not download_chapters:
-      last = -1
-    if 'mangareader.net' in url:
-      mangareader(url, download_chapters,args)
-    elif 'mangahere.co' in url:
-      mangahere(url, download_chapters,args)
-    elif 'bato.to' in url:
-      batoto(url+'/', download_chapters,args)
-    elif 'mangapanda.com' in url:
-      mangapanda(url, download_chapters,args)
-    elif 'goodmanga.net' in url:
-      goodmanga(url, download_chapters,args)
-    elif 'japscan.com' in url:
+    path=dest
+    for r,d,f in os.walk(path):
+      for folder in d:
+        for rr,dd,ff in os.walk(path+"/"+folder):
+          for files in ff:
+            if files in 'chapters.txt':
+              print ('chapter found.')     
+              with open(path+"/"+folder+"/"+files, 'r') as filo:
+                url = filo.readline().replace("\n","")
+                last=float(filo.readline())
+              print ("downloading "+url+" from "+str(last))
+              args.last=last
+              args.url
+              if 'mangareader.net' in url:
+                mangareader(url, download_chapters,args)
+              elif 'mangahere.co' in url:
+                mangahere(url, download_chapters),args
+              elif 'bato.to' in url:
+                batoto(url+'/', download_chapters,args)
+              elif 'mangapanda.com' in url:
+                mangapanda(url, download_chapters,args)
+              elif 'goodmanga.net' in url:
+                goodmanga(url, download_chapters,args)
+              elif 'japscan.com' in url:
+                japscan(url,download_chapters,args)
+ 
+  else:
+    if not args.url:
+      with open(args.list, 'r') as f:
+        xml_list  = f.read()
+
+    download_chapters = []
+    if args.chap:
+      download_chapters = re.split('\\s*,\\s*', args.chap)
+      for i in download_chapters:
+        if type(i) == str and '-' in i:
+          download_chapters.remove(i)
+          for j in range(int(float(re.split('\\s*-\\s*', i, maxsplit=1)[0])*10), int(float(re.split('\\s*-\\s*', i, maxsplit=1)[1])*10)+1):
+            download_chapters.append(j/10.0)
+      download_chapters = sorted(list(set([float(j) for j in download_chapters])))
+  
+  #manage xml file
+    if not args.url:
+      for item in re.findall('(\n?<entry>\\s*(.*?)\\s*</entry>)', xml_list, re.DOTALL|re.MULTILINE):
+        session = Session()
+        session.headers.update({'User-agent': 'Mozilla/5.0'})
+        entry = item[1]
+        try:
+          url       = re.search('<url>(.*?)</url>',                  entry, re.DOTALL|re.MULTILINE).group(1).strip()
+          try:
+            last    = float(re.search('<last>\\s*([\\d.,-]+)\\s*</last>',  entry, re.DOTALL|re.MULTILINE).group(1))
+          except:
+            last    = -1
+          try:
+            dest    = re.search('<destination>(.*?)</destination>',  entry, re.DOTALL|re.MULTILINE).group(1)
+          except:
+            if not args.add_to_calibre:
+              dest  = './'
+            else:
+              dest  = ''
+        except:
+          print('ERROR - line 681\n\n\"{}\"'.format(item[0].replace('\n', '\\n').replace('\t', '\\t')))
+          sys.exit(-1)
+        print('URL - {}'.format(url))
+
+        if 'mangareader.net' in url:
+          mangareader(url, download_chapters,args)
+        elif 'mangahere.co' in url:
+          mangahere(url, download_chapters),args
+        elif 'bato.to' in url:
+          batoto(url+'/', download_chapters,args)
+        elif 'mangapanda.com' in url:
+          mangapanda(url, download_chapters,args)
+        elif 'goodmanga.net' in url:
+          goodmanga(url, download_chapters,args)
+        elif 'japscan.com' in url:
+          japscan(url,download_chapters,args)
+        with open(args.list, 'w') as f:
+          f.write(xml_list)
+    else:
+      if args.dest:
+        dest = args.dest
+      elif not args.add_to_calibre:
+        dest = './'
+      else:
+        dest = ''
+      args.dest=dest
+      url = args.url
+      if not download_chapters:
+        last = -1
+      if 'mangareader.net' in url:
+         mangareader(url, download_chapters,args)
+      elif 'mangahere.co' in url:
+        mangahere(url, download_chapters,args)
+      elif 'bato.to' in url:
+        batoto(url+'/', download_chapters,args)
+      elif 'mangapanda.com' in url:
+        mangapanda(url, download_chapters,args)
+      elif 'goodmanga.net' in url:
+        goodmanga(url, download_chapters,args)
+      elif 'japscan.com' in url:
         japscan(url,download_chapters,args)
 
 
