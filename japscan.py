@@ -41,9 +41,8 @@ def japscan(url, download_chapters,args):
   tags=info_gen[7][1]
 
 
-  for j in range(len(tags)):
-    for k in tag_dict:
-       print("")
+#  for j in range(len(tags)):
+    #for k in tag_dict:
        #tags[j] = re.sub(k, tag_dict[k], tags[j])
   chapters  = []
 
@@ -52,17 +51,19 @@ def japscan(url, download_chapters,args):
 
   # print(chapitres.group(1))
   for j in re.findall('<li>(.*?)</li>', chapitres.group(1), re.DOTALL|re.MULTILINE)[::-1]:
-    match = re.search('<a.*[-/]([0-9]+).*',j,re.DOTALL|re.MULTILINE)
+    #match = re.search('<a.*[-/]([0-9]+).*',j,re.DOTALL|re.MULTILINE)
+    match = re.search('<a.*[-/]([0-9.]+).*>Scan (.*) ([0-9.]+) VF( : )?(.*)?<.*',j,re.DOTALL|re.MULTILINE)
 # re.search('<a.*?>(.*?)([\\d,.]+)\\s*</a>', j, re.DOTALL|re.MULTILINE)
     #name  = match.group(2)
     num   = float(match.group(1))
     link  = "http://"+re.search('href=\".*(www.*?)\"', j).group(1)
-    name = ""+match.group(1)
+    name = match.group(5)
     date = "01/01/2000"
-    #if name:
-    #  name = '{} - {} : {}'.format(series, '{:3.1f}'.format(num).zfill(5), name)
-    #else:
-    #  name = '{} - {}'.format(series, '{:3.1f}'.format(num).zfill(5))
+    serie_short=match.group(2)
+    if name:
+      name = '{} - {} : {}'.format(serie_short, '{:3.1f}'.format(num).zfill(5), name)
+    else:
+      name = '{} - {}'.format(series, '{:3.1f}'.format(num).zfill(5))
 
     if (download_chapters and num in download_chapters) or (not download_chapters and num > last):
       if args.debug or args.verbose:
@@ -79,6 +80,7 @@ def japscan(url, download_chapters,args):
         links.append(link_page.group(1))
 
       links.remove('')
+      links=list(reversed(links))
       chapters.append({'name':name, 'links':links, 'backup_links':links, 'date':date, 'pages':len(links), 'num':num})
       args.url=url
   if chapters:

@@ -120,7 +120,6 @@ def wait(pid_file):
 
 
 def save(links, dirName, img_type, image_links=False):
-  print("hello")
   for i in range(len(links)):
     img_name = '{}{:03}.{}'.format(dirName, i+1, img_type)
     if not os.path.exists(img_name.replace('.jpg', '.png')) and not os.path.exists(img_name.replace('.png', '.jpg')):
@@ -155,7 +154,46 @@ def save(links, dirName, img_type, image_links=False):
           time.sleep(1.7)
       with open(img_name, 'wb') as f:
         f.write(data)
-  print()
+
+
+# When used with update function, createJump groups all downloaded chapter together
+def createJump(args):
+  finalTmp=tempfile.mkdtemp()
+  if hasattr(args,"listzip"):
+    listz=args.listzip
+    for x in range(0, len(listz)):
+      print ("unzipfile...")
+      tmpdir = tempfile.mkdtemp()
+      zip_ref = zipfile.ZipFile(listz[x], 'r')
+      zip_ref.extractall(tmpdir)
+      zip_ref.close()
+      print ("unzipped")
+      print ("moove and rename file")
+
+      for root, dirs, files in os.walk(tmpdir):
+        for f in files:
+          fullpath = os.path.join(root, f)
+          cname=os.path.splitext(os.path.basename(fullpath))[0]
+          newNum=int(float(cname))
+          newNum=(1000*(x+1))+newNum
+          newName=str(newNum)+os.path.splitext(os.path.basename(fullpath))[1]
+          print (cname + "->"+newName)
+          shutil.move(fullpath,finalTmp+"/"+newName)
+      try:
+        shutil.rmtree(tmpdir)
+      except:
+        print ("deletion failled. Please clean your tmp")
+      print ("all copy under finalTmp")
+      if x%10 == 0:
+        print("zip it and clean tmpDir")
+        zipper(finalTmp,"Jump"+datetime.datetime.now().strftime ("%Y%m%d")+"-"+str(x)+".zip")
+        shutil.rmtree(finalTmp)
+        finalTmp=tempfile.mkdtemp()
+      else:
+        print ("not yet 10 : we continue")
+    zipper(finalTmp,"Jump"+datetime.datetime.now().strftime ("%Y%m%d")+"-"+str(x)+".zip")
+  else:
+    print ("no Zip to groups")
 
 
 #I'm calling this function name because I can't think of a better name for it
@@ -205,9 +243,9 @@ def function_name(chapters, series, tags, author, status,args):
         with open(error_file, 'a') as f:
           f.write('Series: \"{}\"\nChapter: {}\n\n'.format(series, '{:3.1f}'.format(chapter['num']).zfill(5)))
         print('\n  Failure')
-        shutil.rmtree(tmpdir)
-        raise
-        return
+        #shutil.rmtree(tmpdir)
+        #raise
+        #return
 
     try:
       zipper(chapdir, f_name)
@@ -225,7 +263,15 @@ def function_name(chapters, series, tags, author, status,args):
       if not os.path.isdir(dirName):
         os.makedirs(dirName)
       try: 
-        shutil.move(f_name, dirName)
+        tmpOut= shutil.move(f_name, dirName)
+        print ("add zip file")
+        if not hasattr(args, 'listzip'):
+          print ("add zip to lis")
+          listzip=[tmpOut]
+          args.listzip=listzip
+        else:
+          print ("append zip")
+          args.listzip.append(tmpOut)
       except:
         print()
 

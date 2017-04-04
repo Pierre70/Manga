@@ -14,7 +14,7 @@ import time
 import sys
 import os
 import re
-from util import request,get_html,zipper,check_pid,wait,save,function_name,title
+from util import request,get_html,zipper,check_pid,wait,save,function_name,title,createJump
 import glob
 
 
@@ -178,7 +178,14 @@ def main():
                 goodmanga(url, download_chapters,args)
               elif 'japscan.com' in url:
                 japscan(url,download_chapters,args)
- 
+    
+
+    if hasattr(args, 'listzip'):
+      print(args.listzip)
+      print(len(args.listzip))
+      createJump(args)
+    else:
+     print ("no zip to add...")
   else:
     if not args.url:
       with open(args.list, 'r') as f:
