@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from os.path import expanduser
-from datetime import datetime
+import datetime
 from requests import Session
 import urllib.request
 import urllib.parse
