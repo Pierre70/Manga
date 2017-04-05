@@ -26,12 +26,12 @@ Command line opptions
 ====
 ```
 usage: manga.py [-h] [-x LIST] [-D] [-v] [-d DEST] [-a] [-u USERNAME]
-                [-p PASSWORD]
+                [-p PASSWORD] [-k]
                 [url] [chap]
 
 positional arguments:
   url                   Url of page to download - do not combine with
-                        -x/--list
+                        -x/--list/-k
   chap                  Chaptes to download - Only works if url is also
                         specified
 
@@ -48,6 +48,8 @@ optional arguments:
                         Batoto username
   -p PASSWORD, --password PASSWORD
                         Batoto password
+  -k 			Update all manga already downloaded with [url] [chap]
+
 ```
 
 There are a few methods of getting this to work.
@@ -65,3 +67,5 @@ if you do not want to include chapter 5 just combine the opptions:
 **Opption 2**
 Use the xml
 TODO
+**Option 3**
+Use -k once donwloaded with option 1. All manga are found from local dir
