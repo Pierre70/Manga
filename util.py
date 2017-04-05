@@ -184,8 +184,8 @@ def createJump(args):
       except:
         print ("deletion failled. Please clean your tmp")
       print ("all copy under finalTmp")
-      if x%10 == 0:
-        print("zip it and clean tmpDir")
+      if x%10 == 0 and x>0 :
+        print("zip it and clean tmpDir : "+datetime.datetime.now().strftime ("%Y%m%d")+"-"+str(x)+".zip")
         zipper(finalTmp,"Jump"+datetime.datetime.now().strftime ("%Y%m%d")+"-"+str(x)+".zip")
         shutil.rmtree(finalTmp)
         finalTmp=tempfile.mkdtemp()
