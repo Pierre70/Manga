@@ -25,20 +25,21 @@ tag_dict= {
 }
 
 
-def japscan(url, download_chapters,args):
+def scan_fr(url, download_chapters,args):
   print("getting url "+url)
   html  = get_html(url)
   global last
   if hasattr(args, 'last'):
     last=args.last
-  series    = title(re.search('(<h1 class="bg-header">).*>(.*)</a>(</h1>)', html.replace('\n', '')).group(2))
-
+  series    = title(re.search('(<h2 class="widget-title" style="display: inline-block;">)([^<]*)(</h2>)', html.replace('\n', '')).group(2))
+  print("series: series"+series)
+ 
 #FIND ALL
-  info_gen = re.findall('(<div class="cell">\\s*(.*?)\\s*</div>)', html.replace('\n', '')) ## ['alice@google.com', 'bob@abc.com']
+ # info_gen = re.findall('(<div class="cell">\\s*(.*?)\\s*</div>)', html.replace('\n', '')) ## ['alice@google.com', 'bob@abc.com']
 
-  status=info_gen[7][1]
-  author=info_gen[5][1]
-  tags=info_gen[7][1]
+  status="" # not set in this source
+  author="" # not set in this source
+  tags="" # not set in this source
 
 
 #  for j in range(len(tags)):
@@ -47,17 +48,18 @@ def japscan(url, download_chapters,args):
   chapters  = []
 
   # catch chapters list
-  chapitres=re.search('(<div id="liste_chapitres">(.*)</div>.*<div class="col-1-3")', html.replace('\n',''))
-  #print(html)  
-  #print(chapitres.group(1))
-  for j in re.findall('<li>(.*?)</li>', chapitres.group(1), re.DOTALL|re.MULTILINE)[::-1]:
+  chapitres=re.search('(<ul class="chapters">(.*)</ul>)', html.replace('\n','').replace('\r',''))
+  # char ? will be used to allow overlapping regex !
+  for j in re.findall('<h5 class="chapter-title-rtl">(.*?)</h5>', chapitres.group(1), re.DOTALL|re.MULTILINE)[::-1]:
+    print("ligne trouvée:"+j)
     #match = re.search('<a.*[-/]([0-9]+).*',j,re.DOTALL|re.MULTILINE)
-    match = re.search('<a.*[-/]([0-9.]+).*>Scan (.*) ([0-9.]+) VF( : )?(.*)?<.*',j,re.DOTALL|re.MULTILINE)
+    match = re.search('<a.*[-/]([0-9.]+).*>(.*) ([0-9.]+)</a>',j,re.DOTALL|re.MULTILINE)
 # re.search('<a.*?>(.*?)([\\d,.]+)\\s*</a>', j, re.DOTALL|re.MULTILINE)
     #name  = match.group(2)
     num   = float(match.group(1))
     link  = "http://"+re.search('href=\".*(www.*?)\"', j).group(1)
-    name = match.group(5)
+    # no name, we use title instead
+    name = ''
     date = "01/01/2000"
     serie_short=match.group(2)
     if name:
@@ -68,25 +70,12 @@ def japscan(url, download_chapters,args):
     if (download_chapters and num in download_chapters) or (not download_chapters and num > last):
       if args.debug or args.verbose:
         print('  Gathering info: \"{}\"'.format(series))
+        print('  downloading chapter '+link)
       chap_html = get_html(link)
       links=['']
-      #HACK : HAVE TO PARSE EACH PAGE TO RETRIEVE IMAGE
-      for content in re.findall('<option .* value=\"(.*?)\".*?>.*</option>', chap_html)[::-1]:
-      #  print("http://www.japscan.com"+content)
-        content_html=get_html("http://www.japscan.com"+content)
-        search='<div itemscope itemtype="http://schema.org/Article">.*src="(.*[.][a-z]{0,4})" />'
-        #link_page=re.search(search,content_html.replace('\n',''),re.MULTILINE)
-        link_page=re.search(search,content_html.replace('\n',''),re.MULTILINE)
-        #print(content_html.replace('\n',''))
-        try:
-          #print(link_page.group(1))
-          links.append(link_page.group(1))
-        except:
-          print('An error occurs, unable to search pages')
-          print(content_html.replace('\n',''))
-        
-      links.remove('')
-      links=list(reversed(links))
+      image_regex="data-src='(.*?) '"
+      links     = [i for i in re.findall(image_regex, chap_html)]
+
       chapters.append({'name':name, 'links':links, 'backup_links':links, 'date':date, 'pages':len(links), 'num':num})
       args.url=url
   if chapters:

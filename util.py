@@ -24,6 +24,17 @@ session     = Session()
 session.headers.update({'User-agent': 'Mozilla/5.0'})
 
 
+def requestTimeOut(url):
+  global session
+  try:
+    r = session.get(url, timeout=20)
+    return r
+  except requests.exceptions.Timeout:
+    # Maybe set up for a retry, or continue in a retry loop
+    raise NameError('TIMEOUT')
+  
+
+
 def request(url, set_head=False):
   global session
   r = session.get(url)
@@ -42,9 +53,22 @@ def get_html(url, set_head=False):
     '\\t'   , '\t').replace(
     '\\r'   , ''  )
 
+def get_fileName(name):
+   print('replacing name'+name)
+   return name.replace(
+      '?','').replace(
+      '!','').replace(
+      '/','').replace(
+      '\\','').replace(
+      '*','').replace(
+      '<','').replace(
+      '>','').replace(
+      ':','').replace(
+      '|','')
 
 #Zips directory int a file called zip_file
 def zipper(dirName, zip_file):
+ 
   zip = zipfile.ZipFile(zip_file, 'w', compression=zipfile.ZIP_DEFLATED)
   root_len = len(os.path.abspath(dirName))
   for root, dirs, files in os.walk(dirName):
@@ -52,6 +76,7 @@ def zipper(dirName, zip_file):
     for f in files:
       fullpath = os.path.join(root, f)
       archive_name = os.path.join(archive_root, f)
+      print(archive_name)
       zip.write(fullpath, archive_name, zipfile.ZIP_DEFLATED)
   zip.close()
 
@@ -135,7 +160,8 @@ def save(links, dirName, img_type, image_links=False):
       for j in range(2):
         for k in range(7):
           try:
-            r = request(img_url)
+            print('requesting url :'+img_url)
+            r = requestTimeOut(img_url)
             if r.status_code != 200:
               raise NameError('No data')
             data = r.content
@@ -220,7 +246,7 @@ def function_name(chapters, series, tags, author, status,args):
 
     print(chapter['backup_links'][0])
     print('  Downloading chapter - {}'.format(chapter['name']))
-    f_name  = '{}{}.cbz'.format(tmpdir, re.sub('[$&\\*<>:;/]', '_', chapter['name']))
+    f_name  = '{}{}.cbz'.format(tmpdir, re.sub('[$&\\*<>:;?!"/]', '_', chapter['name']))
     chapdir = tempfile.mkdtemp(dir=tmpdir)+'/'
 
     if args.debug or args.verbose:
@@ -260,6 +286,7 @@ def function_name(chapters, series, tags, author, status,args):
       while dest.endswith('/'):
         dest = dest[:-1]
       dirName = '{}/{}/'.format(dest, re.sub('[$&\\*<>:;/]', '_', series))
+      print(dirName)
       if not os.path.isdir(dirName):
         os.makedirs(dirName)
       try: 
@@ -283,12 +310,14 @@ def function_name(chapters, series, tags, author, status,args):
       xml_list = xml_list.replace(entry, '<url>{url}</url>\n\t<last>{last}</last>'.format(url=url, last=l))
       entry    = '<url>{url}</url>\n\t<last>{last}</last>'.format(url=url, last=l)
 
-  if not args.debug:
-    try:
-      os.rmdir(tmpdir)
-    except:
-      print()
-      shutil.rmtree(tmpdir)
+  if args.debug:
+    print ("debug will remove temp file. Implement dedicated option to override this way of working")
+  try:
+    #os.rmdir(tmpdir)
+    print()
+  except:
+    print()
+    shutil.rmtree(tmpdir)
 
   if not args.url and not args.update:
     if status != 'Completed':

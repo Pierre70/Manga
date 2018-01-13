@@ -12,10 +12,12 @@ import zipfile
 import shutil
 import time
 import sys
+import codecs
+import locale
 import os
 import re
+import string
 from util import request,get_html,zipper,check_pid,wait,save,function_name,title
-
 
 ### TODO : Improve Global var usage. Check Python doc
 
@@ -24,21 +26,44 @@ tag_dict= {
   'Slice of Life':  'Nichijou'
 }
 
+def log(str):
+	print(str)
 
-def japscan(url, download_chapters,args):
-  print("getting url "+url)
+
+def tester():
+  with open('./sample.txt', 'r', errors='ignore') as content_file:
+    html = content_file.read()
+  #html= html.encode('cp1252',errors='ignore')
+  #print(html.replace('\n', ''))
+  series    = re.search('(<h2 class="text-border">)(.*)(</h2>)', html.replace('\n', '')).group(2)
+  print(series)
+  info_gen = re.findall('(<div class="cell">\\s*(.*?)\\s*</div>)', html.replace('\n', '')) ## 
+  chapitres=re.search('<section class="listchapseries fiche block sep">(.*)</section>', html.replace('\n',''))
+  #print(html)  
+  print(chapitres)
+  for j in re.findall('ger</a>......<a href="(.*)" title="L', chapitres.group(0), re.DOTALL|re.MULTILINE)[::-1]:
+    print(j)
+
+   
+if __name__ == "__main__":
+  print("Encoding is", sys.stdin.encoding)
+  log("Script Start")
+  tester()
+  
+  
+def mymanga(url, download_chapters,args):
   html  = get_html(url)
   global last
   if hasattr(args, 'last'):
     last=args.last
-  series    = title(re.search('(<h1 class="bg-header">).*>(.*)</a>(</h1>)', html.replace('\n', '')).group(2))
+  series    = title(re.search('(<h2 class="text-border">)(.*)(</h2>)', html.replace('\n', '')).group(2))
 
 #FIND ALL
   info_gen = re.findall('(<div class="cell">\\s*(.*?)\\s*</div>)', html.replace('\n', '')) ## ['alice@google.com', 'bob@abc.com']
 
-  status=info_gen[7][1]
-  author=info_gen[5][1]
-  tags=info_gen[7][1]
+  status='default' #info_gen[7][1]
+  author='default' #info_gen[5][1]
+  tags='default' #info_gen[7][1]
 
 
 #  for j in range(len(tags)):
@@ -47,10 +72,10 @@ def japscan(url, download_chapters,args):
   chapters  = []
 
   # catch chapters list
-  chapitres=re.search('(<div id="liste_chapitres">(.*)</div>.*<div class="col-1-3")', html.replace('\n',''))
+  chapitres=re.search('(<section class="listchapseries fiche block sep">(.*)</section>")', html.replace('\n',''))
   #print(html)  
   #print(chapitres.group(1))
-  for j in re.findall('<li>(.*?)</li>', chapitres.group(1), re.DOTALL|re.MULTILINE)[::-1]:
+  for j in re.findall('ger</a>......<a href="(.*)" title="L', chapitres.group(1), re.DOTALL|re.MULTILINE)[::-1]:
     #match = re.search('<a.*[-/]([0-9]+).*',j,re.DOTALL|re.MULTILINE)
     match = re.search('<a.*[-/]([0-9.]+).*>Scan (.*) ([0-9.]+) VF( : )?(.*)?<.*',j,re.DOTALL|re.MULTILINE)
 # re.search('<a.*?>(.*?)([\\d,.]+)\\s*</a>', j, re.DOTALL|re.MULTILINE)

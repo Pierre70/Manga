@@ -25,6 +25,8 @@ from mangahere import mangahere
 from batoto import batoto
 from mangapanda import mangapanda
 from goodmanga import goodmanga
+from scanfr import scan_fr
+from mymanga import mymanga
 
 current_dir = os.path.realpath(os.path.dirname(os.path.realpath(sys.argv[0])))
 
@@ -142,7 +144,8 @@ def main():
   global dest
   global url
   global session
- 
+
+
 ### make auto update
   if args.update:
     download_chapters = []
@@ -178,7 +181,11 @@ def main():
                 goodmanga(url, download_chapters,args)
               elif 'japscan.com' in url:
                 japscan(url,download_chapters,args)
-    
+              elif 'scan-fr.net' in url:
+                scan_fr(url,download_chapters,args)
+              elif 'mymanga.io' in url:
+                mymanga(url,download_chapters,args)
+
 
     if hasattr(args, 'listzip'):
       print(args.listzip)
@@ -237,6 +244,11 @@ def main():
           goodmanga(url, download_chapters,args)
         elif 'japscan.com' in url:
           japscan(url,download_chapters,args)
+        elif 'scan-fr.net' in url:
+          scan_fr(url,download_chapters,args)
+        elif 'mymanga.io' in url:
+          mymanga(url,download_chapters,args)
+		
         with open(args.list, 'w') as f:
           f.write(xml_list)
     else:
@@ -262,7 +274,13 @@ def main():
         goodmanga(url, download_chapters,args)
       elif 'japscan.com' in url:
         japscan(url,download_chapters,args)
+      elif 'scan-fr.net' in url:
+        scan_fr(url,download_chapters,args)
+      elif 'mymanga.io' in url:
+        mymanga(url,download_chapters,args)
+
 
 
 if __name__ == "__main__":
+  print("Script Start")
   main()
